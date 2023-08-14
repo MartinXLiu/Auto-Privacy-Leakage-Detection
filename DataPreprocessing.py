@@ -5,10 +5,9 @@
 # @File    : DataPreprocessing.py
 import os
 import re
-import docx2txt
 from pptx import Presentation
 from PIL import Image
-
+import easyocr
 
 def read_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -38,8 +37,14 @@ def preprocess_files_and_save(directory, output_file):
                     output.write(cleaned_text + '\n')
                 # 对于其他文件类型，可以根据需要执行相应的处理操作
                 elif file_path.endswith('.jpg') or file_path.endswith('.png') or file_path.endswith('.xml'):
-                    # 这里可以添加处理其他文件类型的代码
-                    pass
+                    print(file_path)
+                    img = Image.open(file_path)
+                    # img.show()  # 显示图片
+                    # pixels = list(img.getdata())  # 获取像素数
+                    ocr = easyocr.Reader(['ch_sim', 'en'], gpu=False)
+                    # 识别图片文字
+                    content = ocr.readtext(img
+                    print(content)
                 else:
                     print(f"Unsupported file format: {file_path}")
 
