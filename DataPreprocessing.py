@@ -7,7 +7,12 @@ import os
 import re
 from pptx import Presentation
 from PIL import Image
-import easyocr
+import docx
+# import easyocr
+import win32com.client as wc
+import time
+ROOT = "D:\\Auto-Privacy-Leakage-Detection\\Auto-Privacy-Leakage-Detection\\"
+
 
 def read_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
@@ -29,22 +34,56 @@ def preprocess_files_and_save(directory, output_file):
         for root, _, files in os.walk(directory):
             for file in files:
                 file_path = os.path.join(root, file)
-                # 对于文本文件，进行文本清洗和预处理，并将结果写入文件
-                if file_path.endswith('.txt') or file_path.endswith('.docx'):
+                if file_path.endswith('.wps'):
+                    file_path = ROOT + file_path
+                    file_path.replace('.wps','.docx')
+                    try:
+                        text = ""
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            text += f.read()
+                    except UnicodeDecodeError:
+                        print("maybe there are figures in .wps")
+                    cleaned_text = clean_text(text)
+                    print(".wps",cleaned_text)
+                    output.write(cleaned_text + '\n')
+                    pass
+                elif file_path.endswith('.doc'):
+                    doc_path = ROOT+file_path #使用绝对路径
+                    print(file_path)
+                    word = wc.Dispatch("Word.Application")
+                    print("49",doc_path)
+                    doc = word.Documents.Open(doc_path)
+                    docx_path = doc_path.replace('.doc','.docx')
+                    doc.SaveAs(docx_path, 12)
+                    doc.Close()
+                    word.Quit()
+                    document = docx.Document(docx_path)
+                    try:
+                        text = ""
+                        for p in document.paragraphs:
+                            # print(p.text)
+                            text += p.text
+                        cleaned_text = clean_text(text)
+                        output.write(cleaned_text + '\n')
+                    except UnicodeDecodeError:
+                        print("maybe there are figures in .doc")
+                    os.remove(docx_path)
+                    time.sleep(2)  # 设置延时，避免程序太快，导致上一个word没有关闭
+                elif file_path.endswith('.txt') or file_path.endswith('.docx'):
                     with open(file_path, 'r', encoding='utf-8') as f:
                         text = f.read()
                     cleaned_text = clean_text(text)
                     output.write(cleaned_text + '\n')
-                # 对于其他文件类型，可以根据需要执行相应的处理操作
                 elif file_path.endswith('.jpg') or file_path.endswith('.png') or file_path.endswith('.xml'):
-                    print(file_path)
-                    img = Image.open(file_path)
+                    pass
+                    # print(file_path)
+                    # img = Image.open(file_path)
                     # img.show()  # 显示图片
                     # pixels = list(img.getdata())  # 获取像素数
-                    ocr = easyocr.Reader(['ch_sim', 'en'], gpu=False)
-                    # 识别图片文字
-                    content = ocr.readtext(img
-                    print(content)
+                    # ocr = easyocr.Reader(['ch_sim', 'en'], gpu=False)
+                    # # 识别图片文字
+                    # content = ocr.readtext(img)
+                    # print(content)
                 else:
                     print(f"Unsupported file format: {file_path}")
 
