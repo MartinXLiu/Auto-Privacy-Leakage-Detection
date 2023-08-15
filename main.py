@@ -1,14 +1,15 @@
 import re
+import rarfile
 from DataPreprocessing import read_file, preprocess_files_and_save
 
-
 if __name__ == "__main__":
+
     # 假设解压后的数据在名为data的文件夹中
     data_folder = "data"
     # 定义输出文件名
     output_file = "preprocessed_data.txt"
     preprocess_files_and_save(data_folder, output_file)
-
+    #
     preprocessed_data = read_file(output_file)
     # 编写正则表达式模式
     ip_pattern = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
