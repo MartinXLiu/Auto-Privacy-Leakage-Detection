@@ -146,6 +146,7 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
                         for shape in slide.Shapes:
                             if hasattr(shape, 'HasTextFrame') and shape.HasTextFrame: # 先检查 shape 对象是否具有 HasTextFrame 属性，再检查该属性的值是否为 True
                                 text += shape.TextFrame.TextRange.Text + "\n"
+                    presentation.Close()  # 只是关闭ppt里面的内容，但是不关闭ppt本身
                     cleaned_text = clean_text(text)
                     output.write(cleaned_text + '\n')
                     log.write("\nPreprocess " + file + " done \n") # 打印日志
@@ -190,14 +191,14 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
                                 output.write(output_line + '\n')
                     log.write("\nPreprocess " + file + " done \n")  # 打印日志
 
-                # 对于.hiv文件，使用regipy库解析并输出注册表信息 （时间较长，可自行注释跳过，完成代码可行性测试）
-                elif file_path.endswith('.hiv'):
-                    file_path = os.path.abspath(file_path)  # 绝对路径
-                    hiv_output = parse_and_save_hiv(file_path)
-                    with open('output_hiv.txt', 'w', encoding='utf-8') as hivoutput:
-                        hivoutput.write('\n'.join(hiv_output) + '\n') # 单独写到一个txt文件里
-                    # output.write('\n'.join(hiv_output) + '\n') # 继续写到output里
-                    log.write("\nPreprocess " + file + " done \n") # 打印日志
+                # # 对于.hiv文件，使用regipy库解析并输出注册表信息 （时间较长，可自行注释跳过，完成代码可行性测试）
+                # elif file_path.endswith('.hiv'):
+                #     file_path = os.path.abspath(file_path)  # 绝对路径
+                #     hiv_output = parse_and_save_hiv(file_path)
+                #     with open('output_hiv.txt', 'w', encoding='utf-8') as hivoutput:
+                #         hivoutput.write('\n'.join(hiv_output) + '\n') # 单独写到一个txt文件里
+                #     # output.write('\n'.join(hiv_output) + '\n') # 继续写到output里
+                #     log.write("\nPreprocess " + file + " done \n") # 打印日志
 
                 # 对于.wps格式文件，转换后缀成docx处理
                 elif file_path.endswith('.wps'):
@@ -294,6 +295,9 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
                                 log.write("Preprocess Email Text done\n")
                         log.write("Preprocess " + file + " done\n")
 
+                elif file_path.endswith('.zip'):
+                    pass
+
                 # 最后处理没有后缀的文件
                 elif file_path.endswith(''):
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -302,6 +306,7 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
                         output.write("File Content:\n")
                         output.write(file_content + '\n')
                     log.write("\nPreprocess " + file + " done \n")  # 打印日志
+
                 else:
                     log.write(f"\nUnsupported file format: {file_path} \n")
 
