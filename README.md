@@ -1,6 +1,8 @@
 # Auto-Privacy-Leakage-Detection
 
-处理数据[附件链接](https://cpipc.acge.org.cn/sysFile/downFile.do?fileId=3f03175a2ddb46328f35a1edd8924236)
+处理数据压缩包[附件链接](https://cpipc.acge.org.cn/sysFile/downFile.do?fileId=3f03175a2ddb46328f35a1edd8924236)
+
+程序部署说明[Wiki](https://github.com/MartinXLiu/Auto-Privacy-Leakage-Detection/wiki/%E7%A8%8B%E5%BA%8F%E9%83%A8%E7%BD%B2%E5%B8%B8%E8%A7%81bug%E6%95%B4%E7%90%86)
 
 |解题思路|需实现功能|可能的技术手段|
 |:-:|:-:|:-:|
