@@ -1,5 +1,11 @@
 # Auto-Privacy-Leakage-Detection
-“华为杯”第二届中国研究生网络安全创新大赛揭榜挑战赛赛题：富文本敏感信息泄露检测
+
+处理数据[附件链接](https://cpipc.acge.org.cn/sysFile/downFile.do?fileId=3f03175a2ddb46328f35a1edd8924236)
+
+
+
+
+## **“华为杯”第二届中国研究生网络安全创新大赛揭榜挑战赛赛题：富文本敏感信息泄露检测**
 
 题目1：富文本敏感信息泄露检测
 
@@ -21,4 +27,3 @@
 
 答疑邮箱： xuxiaoqiang6@huawei.com
 
-题目一[附件链接](https://cpipc.acge.org.cn/sysFile/downFile.do?fileId=3f03175a2ddb46328f35a1edd8924236)
