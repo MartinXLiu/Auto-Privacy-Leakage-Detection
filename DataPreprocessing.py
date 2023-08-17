@@ -4,19 +4,13 @@
 # @Author  : Jiaxin Liu
 # @File    : DataPreprocessing.py
 import os
-import re
 
-import time
-import docx
 import openpyxl
 import docx2txt
-import zipfile
 import pytesseract
 import email
-import base64
 
 from email.header import decode_header
-from copy import deepcopy
 from PIL import Image
 from pptx import Presentation
 import win32com.client as wc
@@ -98,30 +92,32 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
             for file in files:
                 file_path = os.path.join(root, file)
 
-                # 先解压缩文件夹下压缩包，再遍历文件，遍历一次即可
-                if file_path.endswith('.zip'):
-                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                        unzip_dir = os.path.join(root, 'unzipped_' + file)
-                        zip_ref.extractall(unzip_dir)
-                        log.write("Unzipped: " + file_path + " to " + unzip_dir + '\n')
-
                 # 对于.txt文件，直接读取文本内容并进行清洗
                 if file_path.endswith('.txt'):
-                    with open(file_path, 'r', encoding='utf-8') as f:  # 读取文件
-                        text = f.read()
+                    text = read_file(file_path)
                     cleaned_text = clean_text(text)
                     output.write(cleaned_text + '\n')  # 写入preprocessed_data.txt
                     log.write("\nPreprocess " + file + " done \n")  # 打印日志
 
-                # 对于.docx文档，使用docx2txt库进行解析并清洗，注意这里需要绝对路径，相对路径会报错
-                elif file_path.endswith('.docx'):
+                # 对于.docx或者.wps文档，使用docx2txt库进行解析并清洗，注意这里需要绝对路径，相对路径会报错
+                elif file_path.endswith('.docx') or file_path.endswith('.wps'):
                     file_path = os.path.abspath(file_path)  # 绝对路径
-                    text = docx2txt.process(file_path)
+                    if file_path.endswith('.wps'):
+                        kwps = wc.Dispatch("Kwps.Application")
+                        wps = kwps.Documents.Open(file_path)
+                        # 将.wps文件另存为.docx文件
+                        docx_output_path = file_path + '.docx'
+                        wps.SaveAs(docx_output_path, 12)
+                        wps.Close()
+                        kwps.Quit()
+                        text = docx2txt.process(docx_output_path)
+                    else:
+                        text = docx2txt.process(file_path)
                     cleaned_text = clean_text(text)
                     output.write(cleaned_text + '\n')
-                    with open(file_path.replace('.docx', '.txt'), 'w', encoding='utf-8') as f:
-                        f.write(cleaned_text)
                     log.write("\nPreprocess " + file + " done \n")  # 打印日志
+                    if file_path.endswith('.wps'): # 删除临时文件
+                        os.remove(docx_output_path)
 
                 # 对于.doc文件，使用pywin32库读取文本内容并进行清洗，注意这里需要绝对路径，相对路径会报错
                 elif file_path.endswith('.doc'):
@@ -146,6 +142,7 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
                         for shape in slide.Shapes:
                             if hasattr(shape, 'HasTextFrame') and shape.HasTextFrame: # 先检查 shape 对象是否具有 HasTextFrame 属性，再检查该属性的值是否为 True
                                 text += shape.TextFrame.TextRange.Text + "\n"
+                    presentation.close()  # 只是关闭ppt里面的内容，但是不关闭ppt本身
                     cleaned_text = clean_text(text)
                     output.write(cleaned_text + '\n')
                     log.write("\nPreprocess " + file + " done \n") # 打印日志
@@ -170,10 +167,12 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
                         ket = wc.Dispatch("Ket.Application")
                         et = ket.Workbooks.Open(file_path)
                         # 将 .et 文件另存为 .xlsx 文件
-                        xlsx_output_path = os.path.splitext(file_path)[0] + ".xlsx"
+                        xlsx_output_path = file_path + ".xlsx"
                         et.SaveAs(xlsx_output_path, 51)  # 使用参数 51 表示保存为 xlsx 格式
+                        et.Close()
+                        ket.Quit()
                         wb = openpyxl.load_workbook(xlsx_output_path)
-                    elif file_path.endswith('.xlsx'):
+                    else:
                         wb = openpyxl.load_workbook(file_path)
                     if wb is not None:
                         for sheet_name in wb.sheetnames:
@@ -189,6 +188,8 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
                                 output_line = '\t'.join(row_data)  # 使用制表符分隔单元格数据，数据更整齐
                                 output.write(output_line + '\n')
                     log.write("\nPreprocess " + file + " done \n")  # 打印日志
+                    if file_path.endswith('.et'): # 删掉临时文件
+                        os.remove(xlsx_output_path)
 
                 # 对于.hiv文件，使用regipy库解析并输出注册表信息 （时间较长，可自行注释跳过，完成代码可行性测试）
                 elif file_path.endswith('.hiv'):
@@ -199,28 +200,12 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
                     # output.write('\n'.join(hiv_output) + '\n') # 继续写到output里
                     log.write("\nPreprocess " + file + " done \n") # 打印日志
 
-                # 对于.wps格式文件，转换后缀成docx处理
-                elif file_path.endswith('.wps'):
-                    file_path.replace('.wps', '.docx')
-                    file_path = os.path.abspath(file_path)  # 绝对路径
-                    try:
-                        text = ""
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            text += f.read()
-                    except UnicodeDecodeError:
-                        log.write(f"\nmaybe there are figures in {file} \n")
-                    cleaned_text = clean_text(text)
-                    output.write(cleaned_text + '\n')
-                    log.write("\nPreprocess " + file + " done\n")  # 打印日志
-                    pass
-
                 # 对于.xml、.yml、.properties等文件，直接读取文件内容并写入输出文件
                 elif file_path.endswith(('.pub', '.xml', '.yml', '.properties', '.py', '.sh', '.md', '.toml', '.rs')):
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        file_content = f.read()
-                        output.write("File Path: " + file_path + '\n')
-                        output.write("File Content:\n")
-                        output.write(file_content + '\n')
+                    file_content = read_file(file_path)
+                    output.write("File Path: " + file_path + '\n')
+                    output.write("File Content:\n")
+                    output.write(file_content + '\n')
                     log.write("\nPreprocess " + file + " done \n")  # 打印日志
 
                 # 处理图片文件, pytesseract用这个库
@@ -294,16 +279,17 @@ def preprocess_files_and_save(directory, output_file, preprocess_log):
                                 log.write("Preprocess Email Text done\n")
                         log.write("Preprocess " + file + " done\n")
 
-                # 最后处理没有后缀的文件
-                elif file_path.endswith(''):
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        file_content = f.read()
-                        output.write("File Path: " + file_path + '\n')
-                        output.write("File Content:\n")
-                        output.write(file_content + '\n')
-                    log.write("\nPreprocess " + file + " done \n")  # 打印日志
+                elif file_path.endswith(('system', 'sam')):
+                    pass
+
                 else:
-                    log.write(f"\nUnsupported file format: {file_path} \n")
+                    file_content = read_file(file_path)
+                    output.write("File Path: " + file_path + '\n')
+                    output.write("File Content:\n")
+                    output.write(file_content + '\n')
+                    log.write("\nPreprocess " + file + " done \n")  # 打印日志
+
+        powerpoint.Quit()
 
 
 # 函数独立性测试，测试后自行注释掉
@@ -314,3 +300,4 @@ if __name__ == "__main__":
     preprocess_log = "preprocess_log.txt"
     preprocess_files_and_save(data_folder, output_file, preprocess_log)
     print("Preprocess all worked.")
+    # system, sam? .eml还没看
